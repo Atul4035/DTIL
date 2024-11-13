@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIT Social - Feed</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <header>
+        <nav><h1>
+            <img src="./bg_left.png" alt="logo" height="200px" width="200px" class="left">
+            <img src="images/logo.jpg" alt="logo" height="150px" width="450px" class="center">
+            <img src="./bg_right.png" alt="logo" height="200px" width="200px" class="right">
+        </h1>
+        
+        <button id="loginButton" onclick="toggleLogin()">Login</button>
+        <button id="profileButton" onclick="goToProfile()" style="display: none;">Profile</button>
+
+        </nav>
+
+    </header>
+
+    <main>
+        <!-- Post Input Section for Logged-In Users -->
+        <section id="postSection" style="display: none;">
+            <textarea id="postText" placeholder="What's on your mind?"></textarea>
+            <input type="file" id="postImage" accept="image/*">
+            <input type="file" id="postFile" accept=".pdf,.doc,.docx">
+            <button onclick="addPost()">Post</button>
+        </section>
+
+        <section id="feed" class="feed">
+            <h2>All Posts</h2>
+            <div id="posts-container">
+                <!-- All user posts will be displayed here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function toggleLogin() {
+            const profileData = JSON.parse(localStorage.getItem("profile"));
+            if (!profileData) {
+                const username = prompt("Enter your username:");
+                const email = prompt("Enter your email:");
+                const profilePic = prompt("Upload your profile picture URL:");
+                const achievements = prompt("Enter your achievements (optional):");
+                if (username && email) {
+                    localStorage.setItem("profile", JSON.stringify({ username, email, profilePic, achievements }));
+                    location.reload(); // Reload to apply changes
+                }
+            } else {
+                document.getElementById("profileButton").style.display = "inline";
+                document.getElementById("loginButton").style.display = "none";
+                document.getElementById("postSection").style.display = "block";
+            }
+        }
+
+        function addPost() {
+            const postText = document.getElementById("postText").value;
+            const postImageInput = document.getElementById("postImage");
+            const postFile = document.getElementById("postFile").files[0];
+            const profileData = JSON.parse(localStorage.getItem("profile"));
+
+            if (profileData && postText) {
+                const post = {
+                    id: Date.now(), // Unique ID for each post
+                    username: profileData.username,
+                    text: postText,
+                    image: null,
+                    file: postFile ? URL.createObjectURL(postFile) : null,
+                    timestamp: new Date().toLocaleString(),
+                    comments: [] // Initialize comments as an empty array
+                };
+
+                if (postImageInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        post.image = event.target.result;
+                        savePost(post);
+                    };
+                    reader.readAsDataURL(postImageInput.files[0]);
+                } else {
+                    savePost(post);
+                }
+
+                document.getElementById("postText").value = "";
+                document.getElementById("postImage").value = "";
+                document.getElementById("postFile").value = "";
+            }
+        }
+
+        function savePost(post) {
+            let posts = JSON.parse(localStorage.getItem("posts")) || [];
+            posts.unshift(post);
+            localStorage.setItem("posts", JSON.stringify(posts));
+            displayAllPosts();
+        }
+
+        function addComment(postId) {
+            const commentText = document.getElementById(`commentText-${postId}`).value;
+            const profileData = JSON.parse(localStorage.getItem("profile"));
+            if (profileData && commentText) {
+                const comment = {
+                    username: profileData.username,
+                    text: commentText,
+                    timestamp: new Date().toLocaleString()
+                };
+                let posts = JSON.parse(localStorage.getItem("posts")) || [];
+                const postIndex = posts.findIndex(post => post.id === postId);
+                if (postIndex > -1) {
+                    posts[postIndex].comments.push(comment);
+                    localStorage.setItem("posts", JSON.stringify(posts));
+                    displayAllPosts();
+                }
+            }
+        }
+
+        function displayAllPosts() {
+            const postsContainer = document.getElementById("posts-container");
+            const posts = JSON.parse(localStorage.getItem("posts")) || [];
+            postsContainer.innerHTML = "";
+
+            posts.forEach(post => {
+                const postDiv = document.createElement("div");
+                postDiv.classList.add("post");
+                postDiv.innerHTML = `
+                    <p><strong class="username">${post.username}</strong>: ${post.text}</p>
+                    ${post.image ? `<img src="${post.image}" alt="Image" style="width: 100px; height: auto;">` : ""}
+                    ${post.file ? `<a href="${post.file}" download>Download File</a>` : ""}
+                    <small>${post.timestamp}</small>
+                    <div class="comments-section">
+                        <h4>Comments</h4>
+                        <div id="comments-container-${post.id}">
+                            ${post.comments.map(comment => `
+                                <div class="comment">
+                                    <p><strong>${comment.username}</strong>: ${comment.text}</p>
+                                    <small>${comment.timestamp}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <textarea id="commentText-${post.id}" placeholder="Add a comment"></textarea>
+                        <button onclick="addComment(${post.id})">Comment</button>
+                    </div>
+                `;
+                postDiv.onclick = () => highlightPost(postDiv);
+                postDiv.querySelector(".username").onclick = (e) => {
+                    e.stopPropagation();
+                    viewUserProfile(post.username);
+                };
+                postsContainer.appendChild(postDiv);
+            });
+        }
+
+        function highlightPost(postDiv) {
+            document.querySelectorAll(".post").forEach(p => p.classList.remove("highlighted"));
+            postDiv.classList.add("highlighted");
+        }
+
+        function viewUserProfile(username) {
+            alert(`Navigate to ${username}'s profile page (Feature not fully implemented).`);
+        }
+
+        function goToProfile() {
+            window.location.href = "profile.html";
+        }
+
+        window.onload = function() {
+            displayAllPosts();
+            toggleLogin();
+        };
+    </script>
+</body>
+</html>

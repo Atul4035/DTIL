@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <main class="login-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" required>
+
+            <label for="profile-pic">Profile Picture (optional):</label>
+            <input type="file" id="profile-pic" accept="image/*">
+
+            <button type="submit">Login</button>
+        </form>
+    </main>
+
+    <script>
+        // Handle form submission
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const email = document.getElementById("email").value;
+            const profilePic = document.getElementById("profile-pic").files[0];
+
+            // Convert profile picture to data URL for storage in localStorage
+            if (profilePic) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    saveProfile(username, email, event.target.result);
+                };
+                reader.readAsDataURL(profilePic);
+            } else {
+                // No profile picture provided
+                saveProfile(username, email, null);
+            }
+        });
+
+        // Save profile information to localStorage and redirect to index.html
+        function saveProfile(username, email, profilePic) {
+            const profileData = {
+                username: username,
+                email: email,
+                profilePic: profilePic
+            };
+            localStorage.setItem("profile", JSON.stringify(profileData));
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>
